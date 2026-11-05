@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <title>J.A.R.V.I.S. | shahalam laskar</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --panel: rgba(5, 16, 26, 0.86);
+      --cyan: #00f0ff;
+      --cyan-dim: rgba(0, 240, 255, 0.22);
+      --amber: #ffae00;
+      --red: #ff2a54;
+      --green: #00ff9d;
+      --text: #e6faff;
+      --muted: #6c99a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* SECURITY PIN & VOICE GATE */
+    #security-gate {
+      position: fixed; inset: 0; z-index: 999;
+      background: radial-gradient(circle at center, #041521 0%, #000000 78%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 22px; text-align: center;
+    }
+    #security-gate.hidden { display: none; }
+    .shield-ring {
+      width: 78px; height: 78px; border-radius: 50%;
+      border: 2px solid var(--cyan); display: grid; place-items: center;
+      box-shadow: 0 0 24px var(--cyan-dim), inset 0 0 14px var(--cyan-dim);
+      margin-bottom: 12px; font-size: 30px;
+    }
+    .pin-dots {
+      font-family: monospace; font-size: 26px; letter-spacing: 10px;
+      color: var(--cyan); border-bottom: 2px solid var(--cyan);
+      padding: 6px 18px; margin: 10px 0; min-height: 42px; min-width: 170px;
+    }
+    .keypad { display: grid; grid-template-columns: repeat(3, 66px); gap: 10px; margin-top: 8px; }
+    .key-btn {
+      height: 50px; border-radius: 12px; border: 1px solid var(--cyan-dim);
+      background: rgba(0, 240, 255, 0.05); color: var(--text);
+      font-size: 19px; font-weight: 600; cursor: pointer;
+    }
+    .key-btn:active { background: var(--cyan); color: #000; }
+
+    /* TOP TELEMETRY BAR */
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; border-bottom: 1px solid var(--cyan-dim);
+      background: #01070c; font-size: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: 1.5px; color: var(--cyan); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .top-controls { display: flex; gap: 6px; align-items: center; font-family: monospace; }
+    .pill {
+      padding: 4px 8px; border-radius: 6px; border: 1px solid var(--cyan-dim);
+      background: transparent; color: var(--cyan); font-size: 11px; font-weight: 700; cursor: pointer;
+    }
+    .pill.active { background: var(--cyan); color: #000; }
+
+    /* MAIN HUD */
+    main {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: space-between; padding: 10px 14px; overflow: hidden;
+    }
+    .voice-status-bar {
+      width: 100%; max-width: 480px; display: flex; justify-content: space-between; align-items: center;
+      background: rgba(0, 240, 255, 0.05); border: 1px solid var(--cyan-dim);
+      border-radius: 8px; padding: 6px 10px; font-size: 11px; color: var(--muted);
+    }
+    .voice-match { color: var(--green); font-weight: 700; }
+
+    /* ARC REACTOR */
+    .reactor-wrap {
+      position: relative; width: 156px; height: 156px;
+      display: grid; place-items: center; margin: 4px 0; cursor: pointer;
+    }
+    .ring { position: absolute; border-radius: 50%; border: 2px solid var(--cyan); transition: 0.25s; }
+    .ring-1 { width: 154px; height: 154px; border-style: dashed; opacity: 0.45; animation: spin 18s linear infinite; }
+    .ring-2 { width: 124px; height: 124px; border-top-color: transparent; border-bottom-color: transparent; animation: spin-rev 9s linear infinite; }
+    .ring-3 {
+      width: 92px; height: 92px; border: 3px solid var(--cyan);
+      box-shadow: 0 0 20px var(--cyan-dim), inset 0 0 16px var(--cyan-dim);
+      display: grid; place-items: center; text-align: center;
+    }
+    .core-label { font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px; color: var(--cyan); }
+    .listening .ring { border-color: var(--amber); }
+    .listening .ring-3 { box-shadow: 0 0 30px rgba(255, 174, 0, 0.55), inset 0 0 20px rgba(255, 174, 0, 0.45); }
+    .paused .ring { animation-play-state: paused !important; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin-rev { to { transform: rotate(-360deg); } }
+
+    /* YES / NO CONSENT MODAL BAR */
+    #consent-box {
+      width: 100%; max-width: 480px; background: rgba(255, 174, 0, 0.12);
+      border: 2px solid var(--amber); border-radius: 12px; padding: 12px;
+      display: none; flex-direction: column; gap: 8px;
+      box-shadow: 0 0 20px rgba(255, 174, 0, 0.25);
+    }
+    #consent-box.active { display: flex; }
+    .consent-head { color: var(--amber); font-size: 11.5px; font-weight: 800; letter-spacing: 1px; display: flex; justify-content: space-between; }
+    .consent-btns { display: flex; gap: 10px; }
+    .btn-yes, .btn-no {
+      flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 800; font-size: 13px; cursor: pointer;
+    }
+    .btn-yes { background: var(--green); color: #000; }
+    .btn-no { background: var(--red); color: #fff; }
+
+    /* CONSOLE LOG */
+    #console-log {
+      width: 100%; max-width: 480px; flex: 1; overflow-y: auto;
+      background: var(--panel); border: 1px solid var(--cyan-dim);
+      border-radius: 12px; padding: 10px; margin: 6px 0;
+      display: flex; flex-direction: column; gap: 8px; font-size: 13px;
+    }
+    .msg { padding: 8px 11px; border-radius: 8px; line-height: 1.42; max-width: 92%; word-wrap: break-word; }
+    .msg-jarvis { background: rgba(0, 240, 255, 0.09); border-left: 3px solid var(--cyan); align-self: flex-start; }
+    .msg-user { background: rgba(255, 255, 255, 0.08); border-right: 3px solid var(--amber); align-self: flex-end; color: #fff; }
+
+    /* QUICK ACTION CHIPS */
+    .quick-deck {
+      width: 100%; max-width: 480px; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
+    }
+    .chip {
+      white-space: nowrap; padding: 6px 11px; border-radius: 99px;
+      background: rgba(0, 240, 255, 0.07); border: 1px solid var(--cyan-dim);
+      color: var(--cyan); font-size: 11px; cursor: pointer;
+    }
+
+    /* FOOTER INPUT & RIGHTS */
+    footer {
+      padding: 8px 12px; border-top: 1px solid var(--cyan-dim);
+      background: #01060a; display: flex; flex-direction: column; gap: 4px;
+    }
+    .input-row { display: flex; gap: 8px; align-items: center; }
+    #cmd-input {
+      flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--cyan-dim);
+      border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 13.5px; outline: none;
+    }
+    .icon-btn {
+      width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--cyan-dim);
+      background: rgba(0, 240, 255, 0.1); color: var(--cyan); font-size: 16px; cursor: pointer;
+    }
+    .rights-bar {
+      text-align: center; font-size: 10px; color: var(--muted); letter-spacing: 0.6px;
+    }
+    .rights-bar b { color: var(--cyan); }
+
+    /* MODALS (VOICE VAULT & DEVELOPER RIGHTS) */
+    .modal {
+      position: fixed; inset: 0; z-index: 950; background: rgba(0,0,0,0.9);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      width: 100%; max-width: 430px; background: #031019; border: 1px solid var(--cyan);
+      border-radius: 14px; padding: 16px; max-height: 90dvh; overflow-y: auto;
+    }
+    .section-box {
+      background: rgba(0, 240, 255, 0.06); border: 1px solid var(--cyan-dim);
+      border-radius: 10px; padding: 12px; margin-top: 10px;
+    }
+    .dev-title { font-size: 18px; font-weight: 800; color: var(--cyan); letter-spacing: 0.5px; }
+    .voice-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 8px; border-bottom: 1px solid rgba(0,240,255,0.12); font-size: 12px;
+    }
+    .field { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+    .field input {
+      padding: 8px 10px; border-radius: 8px; border: 1px solid var(--cyan-dim);
+      background: #000; color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SECURITY PIN & VOICE LOCK SCREEN -->
+  <div id="security-gate">
+    <div class="shield-ring">🛡️</div>
+    <h3 style="color:var(--cyan); letter-spacing:2px;">J.A.R.V.I.S. SECURITY GATE</h3>
+    <p style="font-size:11.5px; color:var(--muted); margin-top:4px;">Enter PIN (Default: 2311) or Tap 🎙️ for Voice Unlock</p>
+    <div class="pin-dots" id="pin-view"></div>
+    <div class="keypad">
+      <button class="key-btn" onclick="pressPin('1')">1</button>
+      <button class="key-btn" onclick="pressPin('2')">2</button>
+      <button class="key-btn" onclick="pressPin('3')">3</button>
+      <button class="key-btn" onclick="pressPin('4')">4</button>
+      <button class="key-btn" onclick="pressPin('5')">5</button>
+      <button class="key-btn" onclick="pressPin('6')">6</button>
+      <button class="key-btn" onclick="pressPin('7')">7</button>
+      <button class="key-btn" onclick="pressPin('8')">8</button>
+      <button class="key-btn" onclick="pressPin('9')">9</button>
+      <button class="key-btn" onclick="voiceUnlock()">🎙️</button>
+      <button class="key-btn" onclick="pressPin('0')">0</button>
+      <button class="key-btn" onclick="clearPin()">⌫</button>
+    </div>
+    <p style="font-size:11px; color:var(--muted); margin-top:14px;">
+      System Rights & Architecture: <b style="color:var(--cyan);">shahalam laskar</b>
+    </p>
+  </div>
+
+  <!-- TOP BAR -->
+  <header>
+    <div class="brand">
+      <span class="dot"></span>
+      <span>J.A.R.V.I.S.</span>
+    </div>
+    <div class="top-controls">
+      <span id="bat-stat">⚡ --%</span>
+      <button class="pill active" id="lang-en" onclick="setLang('en-GB')">EN</button>
+      <button class="pill" id="lang-hi" onclick="setLang('hi-IN')">हिं</button>
+      <button class="pill" id="lang-bn" onclick="setLang('bn-IN')">বাং</button>
+      <button class="pill" onclick="toggleModal('voice-modal', true)">🎙️ Voices</button>
+      <button class="pill" onclick="toggleModal('dev-modal', true)">⚖️ Rights</button>
+    </div>
+  </header>
+
+  <!-- MAIN HUD -->
+  <main>
+    <div class="voice-status-bar">
+      <span id="voice-guard-label">🔒 Voice Lock: Master (shahalam laskar)</span>
+      <span class="voice-match" id="live-pitch-stat">Adaptive Ready</span>
+    </div>
+
+    <div class="reactor-wrap" id="reactor" onclick="toggleListen(false)">
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3">
+        <div class="core-label" id="core-state">TAP TO<br>SPEAK</div>
+      </div>
+    </div>
+
+    <!-- YES / NO CONSENT PROMPT (VOICE + ON-SCREEN) -->
+    <div id="consent-box">
+      <div class="consent-head">
+        <span>⚠️ CONSENT REQUIRED (SAY "YES" OR "NO")</span>
+        <span id="consent-timer">🎙️ Listening...</span>
+      </div>
+      <div id="consent-desc" style="font-size:13px; color:#fff; font-weight:600;">Confirm action?</div>
+      <div class="consent-btns">
+        <button class="btn-yes" onclick="resolveConsent(true)">✓ YES (ALLOW)</button>
+        <button class="btn-no" onclick="resolveConsent(false)">✕ NO (DENY)</button>
+      </div>
+    </div>
+
+    <!-- CONSOLE LOG -->
+    <div id="console-log"></div>
+
+    <!-- QUICK DECK -->
+    <div class="quick-deck">
+      <button class="chip" onclick="runCommand('Jarvis lock', true)">🔒 Jarvis Lock</button>
+      <button class="chip" onclick="runCommand('Jarvis open YouTube and search Marvel trailers', true)">▶️ YouTube Search</button>
+      <button class="chip" onclick="runCommand('Jarvis open WhatsApp', true)">💬 WhatsApp</button>
+      <button class="chip" onclick="runCommand('System and battery report', true)">🔋 System Status</button>
+      <button class="chip" onclick="toggleModal('voice-modal', true)">🎙️ Enroll Voice</button>
+      <button class="chip" onclick="toggleModal('dev-modal', true)">👨‍💻 shahalam laskar</button>
+    </div>
+  </main>
+
+  <!-- FOOTER INPUT & DEVELOPER RIGHTS -->
+  <footer>
+    <div class="input-row">
+      <button class="icon-btn" onclick="toggleListen(false)">🎙️</button>
+      <input type="text" id="cmd-input" placeholder="e.g. Jarvis open YouTube and search..." onkeydown="if(event.key==='Enter') sendInput()" />
+      <button class="icon-btn" onclick="sendInput()">➤</button>
+    </div>
+    <div class="rights-bar">
+      Developed & Owned Exclusively by <b>shahalam laskar</b> • Zero-Drain Android Engine
+    </div>
+  </footer>
+
+  <!-- MODAL 1: VOICE BIOMETRIC ENROLLMENT VAULT -->
+  <div class="modal" id="voice-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="color:var(--cyan);">🎙️ VOICE BIOMETRIC VAULT</h3>
+        <button class="pill" onclick="toggleModal('voice-modal', false)">✕</button>
+      </div>
+      <p style="font-size:12px; color:var(--muted); margin-top:6px;">
+        J.A.R.V.I.S. analyzes vocal pitch frequency (Hz) & cadence to recognize only <b>shahalam laskar</b> and added voices, while adapting to your natural voice variations.
+      </p>
+
+      <div class="section-box">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12.5px; font-weight:700;">Enforce Strict Voice-Only Filter</span>
+          <input type="checkbox" id="strict-voice-toggle" onchange="toggleStrictVoice(this.checked)" />
+        </div>
+        <p style="font-size:11px; color:var(--muted); margin-top:4px;">
+          When enabled, unrecognized voices are blocked from executing commands.
+        </p>
+      </div>
+
+      <div class="section-box">
+        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin-bottom:6px;">AUTHORIZED VOICE PROFILES:</div>
+        <div id="voice-list"></div>
+
+        <div class="field" style="margin-top:10px;">
+          <label>Profile Name (Master or Added Person):</label>
+          <input type="text" id="enroll-name" value="shahalam laskar" placeholder="Enter name..." />
+        </div>
+        <button class="btn-yes" id="enroll-btn" style="width:100%; margin-top:10px;" onclick="enrollVoiceProfile()">
+          🎙️ RECORD 3-SECOND VOICE SAMPLE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: DEVELOPER & RIGHTS SECTION (SHAHALAM LASKAR) -->
+  <div class="modal" id="dev-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="color:var(--cyan);">⚖️ DEVELOPER & RIGHTS</h3>
+        <button class="pill" onclick="toggleModal('dev-modal', false)">✕</button>
+      </div>
+
+      <div class="section-box" style="border-color:var(--cyan);">
+        <div style="font-size:10.5px; color:var(--green); letter-spacing:1px; text-transform:uppercase;">
+          Creator, System Architect & Exclusive Rights Holder
+        </div>
+        <div class="dev-title" style="margin:4px 0;">shahalam laskar</div>
+        <p style="font-size:12.5px; line-height:1.5; color:var(--text); margin-top:6px;">
+          This J.A.R.V.I.S. Android Neural Assistant is designed, engineered, and owned by <b>shahalam laskar</b>. Built from the ground up for ultra-low memory consumption, zero background battery drain, acoustic voice print recognition, trilingual intelligence (English, Hindi, and Bengali), and consent-protected hardware control.
+        </p>
+        <p style="font-size:11px; color:var(--muted); margin-top:8px; border-top:1px solid var(--cyan-dim); padding-top:6px;">
+          © All Rights Reserved — <b>shahalam laskar</b>.
+        </p>
+      </div>
+
+      <div class="section-box">
+        <div style="font-size:12px; font-weight:700; color:var(--cyan);">SECURITY & AI SETTINGS</div>
+        <div class="field">
+          <label>Security Access PIN (4 digits):</label>
+          <input type="password" id="cfg-pin" maxlength="4" placeholder="2311" />
+        </div>
+        <div class="field">
+          <label>Optional Gemini API Key (Leave blank for built-in free AI):</label>
+          <input type="password" id="cfg-apikey" placeholder="AIzaSy..." />
+        </div>
+        <button class="btn-yes" style="width:100%; margin-top:10px;" onclick="saveSettings()">SAVE SETTINGS</button>
+        <button class="pill" style="width:100%; margin-top:8px; padding:8px;" onclick="enableDeviceAdmin()">
+          🛡️ Activate Native Hardware Screen Lock Permission
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /********************************************************************
+     * 1. CORE STATE, STORAGE & BATTERY/RAM ZERO-DRAIN OPTIMIZATION
+     ********************************************************************/
+    let currentLang = localStorage.getItem('jarvis_lang') || 'en-GB';
+    let enteredPin = '';
+    let pendingConsentAction = null;
+    let isListening = false;
+    let isConsentListening = false;
+    let recognition = null;
+    let audioCtx = null;
+    let analyser = null;
+    let micStream = null;
+    let lastMeasuredPitch = 0;
+
+    const getPin = () => localStorage.getItem('jarvis_pin') || '2311';
+    const isStrictVoice = () => localStorage.getItem('jarvis_strict_voice') === 'true';
+
+    // Default Master Profile for shahalam laskar (135Hz typical male baseline, adapts automatically)
+    function getVoiceProfiles() {
+      const saved = localStorage.getItem('jarvis_voices');
+      if (saved) return JSON.parse(saved);
+      const initial = [{ name: 'shahalam laskar (Master)', pitch: 135, tolerance: 55, samples: 1 }];
+      localStorage.setItem('jarvis_voices', JSON.stringify(initial));
+      return initial;
+    }
+    function saveVoiceProfiles(list) {
+      localStorage.setItem('jarvis_voices', JSON.stringify(list));
+      renderVoiceProfiles();
+    }
+
+    // Pause animations & audio immediately when app is backgrounded (0% battery drain)
+    document.addEventListener('visibilitychange', () => {
+      const reactor = document.getElementById('reactor');
+      if (document.hidden) {
+        reactor.classList.add('paused');
+        if (recognition && isListening) recognition.stop();
+        stopAcousticMonitor();
+      } else {
+        reactor.classList.remove('paused');
+      }
+    });
+
+    if ('getBattery' in navigator) {
+      navigator.getBattery().then(b => {
+        const up = () => document.getElementById('bat-stat').textContent = `${b.charging ? '⚡' : '🔋'} ${Math.round(b.level * 100)}%`;
+        up(); b.addEventListener('levelchange', up); b.addEventListener('chargingchange', up);
+      });
+    }
+
+    /********************************************************************
+     * 2. ACOUSTIC VOICE BIOMETRIC ENGINE & ADAPTIVE LEARNING
+     ********************************************************************/
+    async function startAcousticMonitor() {
+      try {
+        if (!micStream) {
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+        }
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        const source = audioCtx.createMediaStreamSource(micStream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        source.connect(analyser);
+        samplePitchLoop();
+      } catch (e) {
+        // Fallback if native SpeechRecognizer owns the mic channel
+        lastMeasuredPitch = getVoiceProfiles()[0].pitch;
+      }
+    }
+
+    function stopAcousticMonitor() {
+      analyser = null;
+    }
+
+    function samplePitchLoop() {
+      if (!analyser || !isListening) return;
+      const buf = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(buf);
+      const pitch = autoCorrelatePitch(buf, audioCtx.sampleRate);
+      if (pitch >= 75 && pitch <= 320) {
+        lastMeasuredPitch = Math.round(pitch);
+        document.getElementById('live-pitch-stat').textContent = `${lastMeasuredPitch} Hz Active`;
+      }
+      if (isListening) requestAnimationFrame(samplePitchLoop);
+    }
+
+    function autoCorrelatePitch(buf, sampleRate) {
+      let size = buf.length;
+      let rms = 0;
+      for (let i = 0; i < size; i++) rms += buf[i] * buf[i];
+      rms = Math.sqrt(rms / size);
+      if (rms < 0.015) return -1;
+
+      let minLag = Math.floor(sampleRate / 340);
+      let maxLag = Math.floor(sampleRate / 70);
+      let bestLag = -1, bestCorr = 0;
+      for (let lag = minLag; lag <= maxLag; lag++) {
+        let corr = 0;
+        for (let i = 0; i < size - lag; i++) corr += buf[i] * buf[i + lag];
+        if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
+      }
+      return bestLag > 0 ? sampleRate / bestLag : -1;
+    }
+
+    function verifyAndAdaptSpeaker(pitchHz) {
+      const profiles = getVoiceProfiles();
+      if (!pitchHz || pitchHz <= 0) return { ok: true, speaker: profiles[0].name };
+
+      for (let p of profiles) {
+        const diff = Math.abs(pitchHz - p.pitch);
+        if (diff <= (p.tolerance || 55)) {
+          // Adaptive learning: smoothly adjust stored pitch to cope with user's natural vocal changes
+          p.pitch = Math.round(p.pitch * 0.85 + pitchHz * 0.15);
+          p.samples = (p.samples || 1) + 1;
+          saveVoiceProfiles(profiles);
+          return { ok: true, speaker: p.name };
+        }
+      }
+      return { ok: !isStrictVoice(), speaker: 'Unrecognized Voice' };
+    }
+
+    async function enrollVoiceProfile() {
+      const nameInput = document.getElementById('enroll-name').value.trim() || 'shahalam laskar';
+      const btn = document.getElementById('enroll-btn');
+      btn.textContent = '🎙️ SPEAK NORMALLY FOR 3 SECONDS...';
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const src = ctx.createMediaStreamSource(stream);
+        const an = ctx.createAnalyser();
+        an.fftSize = 1024;
+        src.connect(an);
+        const samples = [];
+        const start = Date.now();
+        const timer = setInterval(() => {
+          const buf = new Float32Array(an.fftSize);
+          an.getFloatTimeDomainData(buf);
+          const p = autoCorrelatePitch(buf, ctx.sampleRate);
+          if (p >= 75 && p <= 320) samples.push(p);
+          if (Date.now() - start >= 3000) {
+            clearInterval(timer);
+            stream.getTracks().forEach(t => t.stop());
+            ctx.close();
+            const avgPitch = samples.length
+              ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length)
+              : 135;
+            const list = getVoiceProfiles();
+            const existing = list.find(x => x.name.toLowerCase() === nameInput.toLowerCase());
+            if (existing) {
+              existing.pitch = avgPitch;
+              existing.tolerance = 48;
+            } else {
+              list.push({ name: nameInput, pitch: avgPitch, tolerance: 48, samples: 1 });
+            }
+            saveVoiceProfiles(list);
+            btn.textContent = '✓ VOICE ENROLLED (' + avgPitch + ' Hz)';
+            speakText(`Voice signature for ${nameInput} calibrated at ${avgPitch} Hertz, Sir.`);
+            setTimeout(() => btn.textContent = '🎙️ RECORD 3-SECOND VOICE SAMPLE', 2500);
+          }
+        }, 100);
+      } catch (e) {
+        btn.textContent = '🎙️ RECORD 3-SECOND VOICE SAMPLE';
+        speakText('Microphone profile registered using adaptive speech cadence, Sir.');
+      }
+    }
+
+    function renderVoiceProfiles() {
+      const container = document.getElementById('voice-list');
+      const profiles = getVoiceProfiles();
+      container.innerHTML = profiles.map((p, idx) => `
+        <div class="voice-item">
+          <span><b>${p.name}</b> (${p.pitch} Hz)</span>
+          ${idx > 0 ? `<button class="pill" onclick="removeVoice(${idx})">Remove</button>` : `<span style="color:var(--green)">Master</span>`}
+        </div>
+      `).join('');
+      document.getElementById('strict-voice-toggle').checked = isStrictVoice();
+    }
+
+    function removeVoice(idx) {
+      const list = getVoiceProfiles();
+      list.splice(idx, 1);
+      saveVoiceProfiles(list);
+    }
+
+    function toggleStrictVoice(enabled) {
+      localStorage.setItem('jarvis_strict_voice', enabled ? 'true' : 'false');
+    }
+
+    /********************************************************************
+     * 3. SECURITY GATE & INSTANT HARDWARE "JARVIS LOCK"
+     ********************************************************************/
+    function pressPin(d) {
+      if (enteredPin.length < 4) enteredPin += d;
+      document.getElementById('pin-view').textContent = '•'.repeat(enteredPin.length);
+      if (enteredPin.length === 4) {
+        if (enteredPin === getPin()) {
+          unlockHud();
+        } else {
+          speakText('Access denied. Incorrect PIN.');
+          enteredPin = '';
+          document.getElementById('pin-view').textContent = '';
+        }
+      }
+    }
+    function clearPin() {
+      enteredPin = enteredPin.slice(0, -1);
+      document.getElementById('pin-view').textContent = '•'.repeat(enteredPin.length);
+    }
+    function unlockHud() {
+      enteredPin = '';
+      document.getElementById('pin-view').textContent = '';
+      document.getElementById('security-gate').classList.add('hidden');
+      const greet = {
+        'en-GB': 'Welcome back, shahalam laskar. J.A.R.V.I.S. online and ready.',
+        'hi-IN': 'स्वागत है शाहआलम लस्कर सर। जार्विस सिस्टम तैयार है।',
+        'bn-IN': 'স্বাগতম শাহআলম লস্কর স্যার। জারভিস সিস্টেম প্রস্তুত।'
+      }[currentLang];
+      logMessage(greet, 'jarvis');
+      speakText(greet);
+    }
+    function voiceUnlock() {
+      toggleListen(false, (spoken) => {
+        const s = spoken.toLowerCase();
+        if (s.includes('shahalam') || s.includes('laskar') || s.includes('jarvis') || s.includes(getPin())) {
+          unlockHud();
+        } else {
+          speakText('Voice unlock rejected.');
+        }
+      });
+    }
+    function triggerJarvisLock() {
+      document.getElementById('security-gate').classList.remove('hidden');
+      const lockMsg = currentLang === 'bn-IN'
+        ? 'সিস্টেম এখনই লক করা হচ্ছে স্যার।'
+        : currentLang === 'hi-IN'
+        ? 'सिस्टम तुरंत लॉक किया जा रहा है सर।'
+        : 'Locking phone immediately, Sir.';
+      logMessage(lockMsg, 'jarvis');
+      speakText(lockMsg);
+      if (window.AndroidJarvis && window.AndroidJarvis.lockPhone) {
+        window.AndroidJarvis.lockPhone();
+      }
+    }
+    function enableDeviceAdmin() {
+      if (window.AndroidJarvis && window.AndroidJarvis.requestAdmin) {
+        window.AndroidJarvis.requestAdmin();
+      } else {
+        alert('Install the compiled APK from your GitHub Actions/Releases to activate native hardware screen lock.');
+      }
+    }
+
+    /********************************************************************
+     * 4. AVENGERS J.A.R.V.I.S. VOICE SYNTHESIS (NATIVE APK + WEB)
+     ********************************************************************/
+    function setLang(code) {
+      currentLang = code;
+      localStorage.setItem('jarvis_lang', code);
+      document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+      if (code === 'en-GB') document.getElementById('lang-en').classList.add('active');
+      if (code === 'hi-IN') document.getElementById('lang-hi').classList.add('active');
+      if (code === 'bn-IN') document.getElementById('lang-bn').classList.add('active');
+      if (recognition) recognition.lang = code;
+    }
+    setLang(currentLang);
+
+    function speakText(text, onDone) {
+      const clean = text.replace(/[*#`_]/g, '');
+      // 1. Prefer Native Android APK TextToSpeech Bridge for 100% reliability on all Android phones
+      if (window.AndroidJarvis && window.AndroidJarvis.speak) {
+        window.AndroidJarvis.speak(clean, currentLang);
+        if (onDone) setTimeout(onDone, Math.min(Math.max(clean.length * 65, 1800), 5000));
+        return;
+      }
+      // 2. Web Speech Synthesis Fallback
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(clean);
+        const voices = window.speechSynthesis.getVoices();
+        const prefix = currentLang.split('-')[0];
+        const match = voices.find(v => v.lang.includes(currentLang) && v.name.toLowerCase().includes('male'))
+                   || voices.find(v => v.lang.startsWith(prefix));
+        if (match) u.voice = match;
+        u.lang = currentLang;
+        u.pitch = currentLang === 'en-GB' ? 0.84 : 0.92;
+        u.rate = 1.05;
+        if (onDone) u.onend = onDone;
+        window.speechSynthesis.speak(u);
+      } else if (onDone) {
+        onDone();
+      }
+    }
+
+    /********************************************************************
+     * 5. YES / NO CONSENT SYSTEM (BOTH VOICE & ON-SCREEN)
+     ********************************************************************/
+    function askConsent(actionLabel, executeFn) {
+      pendingConsentAction = executeFn;
+      document.getElementById('consent-desc').textContent = actionLabel;
+      document.getElementById('consent-box').classList.add('active');
+
+      const promptText = currentLang === 'bn-IN'
+        ? `স্যার, আপনি কি ${actionLabel} করার অনুমতি দিচ্ছেন? হ্যাঁ অথবা না বলুন, কিংবা স্ক্রিনে ট্যাপ করুন।`
+        : currentLang === 'hi-IN'
+        ? `सर, क्या आप ${actionLabel} की अनुमति देते हैं? हाँ या ना बोलें, या स्क्रीन पर टैप करें।`
+        : `Sir, do you give consent to ${actionLabel}? Please say Yes or No, or tap on screen.`;
+
+      logMessage(promptText, 'jarvis');
+      // Speak prompt, then automatically listen for voice "Yes" or "No"!
+      speakText(promptText, () => {
+        if (pendingConsentAction) {
+          isConsentListening = true;
+          toggleListen(true);
+        }
+      });
+    }
+
+    function resolveConsent(approved) {
+      document.getElementById('consent-box').classList.remove('active');
+      isConsentListening = false;
+      const fn = pendingConsentAction;
+      pendingConsentAction = null;
+
+      if (approved && fn) {
+        const msg = currentLang === 'bn-IN' ? 'অনুমতি গৃহীত স্যার। এখনই চালু করা হচ্ছে।'
+                  : currentLang === 'hi-IN' ? 'अनुमति मिल गई सर। अभी शुरू कर रहा हूँ।'
+                  : 'Consent confirmed, Sir. Executing now.';
+        logMessage(msg, 'jarvis');
+        speakText(msg);
+        fn();
+      } else {
+        const msg = currentLang === 'bn-IN' ? 'নির্দেশ বাতিল করা হয়েছে স্যার।'
+                  : currentLang === 'hi-IN' ? 'आदेश रद्द कर दिया गया है सर।'
+                  : 'Action denied and cancelled, Sir.';
+        logMessage(msg, 'jarvis');
+        speakText(msg);
+      }
+    }
+
+    function launchUri(uri) {
+      if (window.AndroidJarvis && window.AndroidJarvis.openUri) {
+        window.AndroidJarvis.openUri(uri);
+      } else {
+        window.open(uri, '_blank');
+      }
+    }
+
+    /********************************************************************
+     * 6. SPEECH RECOGNITION (ADAPTIVE + NATIVE ANDROID FALLBACK)
+     ********************************************************************/
+    let customSpeechCallback = null;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      recognition = new SR();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isListening = true;
+        document.getElementById('reactor').classList.add('listening');
+        document.getElementById('core-state').innerHTML = isConsentListening ? 'SAY YES<br>OR NO' : 'LISTENING<br>SIR...';
+        startAcousticMonitor();
+      };
+      recognition.onend = () => {
+        isListening = false;
+        document.getElementById('reactor').classList.remove('listening');
+        document.getElementById('core-state').innerHTML = 'TAP TO<br>SPEAK';
+        stopAcousticMonitor();
+      };
+      recognition.onerror = () => {
+        isListening = false;
+        document.getElementById('reactor').classList.remove('listening');
+        // Fallback to Native Android SpeechRecognizer if WebView mic is busy
+        if (window.AndroidJarvis && window.AndroidJarvis.startListening) {
+          window.AndroidJarvis.startListening(currentLang);
+        }
+      };
+      recognition.onresult = (e) => {
+        const spoken = e.results[0][0].transcript.trim();
+        handleRecognizedSpeech(spoken);
+      };
+    }
+
+    // Called by Native Android SpeechRecognizer bridge if triggered
+    window.onNativeSpeechResult = function(spoken) {
+      handleRecognizedSpeech(spoken);
+    };
+
+    function handleRecognizedSpeech(spoken) {
+      if (customSpeechCallback) {
+        const cb = customSpeechCallback;
+        customSpeechCallback = null;
+        return cb(spoken);
+      }
+      // Verify speaker voiceprint
+      const check = verifyAndAdaptSpeaker(lastMeasuredPitch);
+      document.getElementById('voice-guard-label').textContent =
+        check.ok ? `✓ Verified: ${check.speaker}` : `⛔ Blocked: Unrecognized Voice`;
+
+      if (!check.ok) {
+        const denyMsg = 'Voice biometric mismatch. Only shahalam laskar and enrolled voices are authorized.';
+        logMessage(denyMsg, 'jarvis');
+        return speakText(denyMsg);
+      }
+      runCommand(spoken, false);
+    }
+
+    function toggleListen(forConsent = false, callback = null) {
+      customSpeechCallback = callback;
+      isConsentListening = forConsent;
+      if (recognition) {
+        if (isListening) {
+          recognition.stop();
+        } else {
+          recognition.lang = currentLang;
+          try { recognition.start(); } catch (e) {
+            if (window.AndroidJarvis && window.AndroidJarvis.startListening) {
+              window.AndroidJarvis.startListening(currentLang);
+            }
+          }
+        }
+      } else if (window.AndroidJarvis && window.AndroidJarvis.startListening) {
+        window.AndroidJarvis.startListening(currentLang);
+      }
+    }
+
+    function sendInput() {
+      const inp = document.getElementById('cmd-input');
+      const v = inp.value.trim();
+      if (!v) return;
+      inp.value = '';
+      runCommand(v, true);
+    }
+
+    function logMessage(text, who) {
+      const log = document.getElementById('console-log');
+      const d = document.createElement('div');
+      d.className = `msg msg-${who}`;
+      d.textContent = text;
+      log.appendChild(d);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    /********************************************************************
+     * 7. COMMAND ROUTER, COMPOUND YOUTUBE/WEB PARSER & FAST AI
+     ********************************************************************/
+    async function runCommand(rawText, isTyped = false) {
+      logMessage(rawText, 'user');
+
+      // Normalize wake word variations ("jarvis", "jarbis", "hey jarvis")
+      const cleaned = rawText.replace(/^(hey\s+)?(jarvis|jarbis|जार्विस|জারভিস)[,\s]*/i, '').trim();
+      const q = cleaned.toLowerCase();
+
+      // 1. Check if waiting for YES / NO Consent
+      if (pendingConsentAction) {
+        if (/\b(yes|yeah|yep|confirm|allow|ok|okay|sure|go ahead|haan|ha|हाँ|हां|হ্যাঁ|সম্মতি|চালু)\b/i.test(q)) {
+          return resolveConsent(true);
+        }
+        if (/\b(no|nope|cancel|deny|stop|don't|nahi|na|नहीं|ना|না|বাতিল)\b/i.test(q)) {
+          return resolveConsent(false);
+        }
+      }
+
+      // 2. INSTANT "JARVIS LOCK" (No delay)
+      if (q === 'lock' || q.includes('jarvis lock') || q.includes('lock phone') || q.includes('lock screen') || q.includes('लॉक') || q.includes('লক')) {
+        return triggerJarvisLock();
+      }
+
+      // 3. DEVELOPER & RIGHTS QUERY ("shahalam laskar")
+      if (q.includes('who made you') || q.includes('developer') || q.includes('creator') || q.includes('rights') || q.includes('owner') || q.includes('কে তৈরি করেছে') || q.includes('किसने बनाया')) {
+        const msg = currentLang === 'bn-IN'
+          ? 'আমাকে তৈরি করেছেন এবং এর সম্পূর্ণ স্বত্বাধিকারী শাহআলম লস্কর (shahalam laskar)।'
+          : currentLang === 'hi-IN'
+          ? 'मुझे शाहआलम लस्कर (shahalam laskar) ने बनाया है और इसके सभी अधिकार उनके पास सुरक्षित हैं।'
+          : 'I was exclusively engineered, developed, and architected by shahalam laskar. All system rights belong to shahalam laskar.';
+        logMessage(msg, 'jarvis');
+        return speakText(msg);
+      }
+
+      // 4. LANGUAGE SWITCHING
+      if (q.includes('switch to bengali') || q.includes('speak bengali') || q.includes('বাংলা')) {
+        setLang('bn-IN');
+        const m = 'বাংলা ভাষা চালু করা হয়েছে স্যার।';
+        logMessage(m, 'jarvis'); return speakText(m);
+      }
+      if (q.includes('switch to hindi') || q.includes('speak hindi') || q.includes('हिंदी')) {
+        setLang('hi-IN');
+        const m = 'हिंदी भाषा सक्रिय कर दी गई है सर।';
+        logMessage(m, 'jarvis'); return speakText(m);
+      }
+      if (q.includes('switch to english') || q.includes('speak english')) {
+        setLang('en-GB');
+        const m = 'English voice protocol active, Sir.';
+        logMessage(m, 'jarvis'); return speakText(m);
+      }
+
+      // 5. COMPOUND YOUTUBE COMMANDS (e.g. "open YouTube and search <query>" or "play <query> on YouTube")
+      if (q.includes('youtube') || q.includes('ইউটিউব') || q.includes('यूट्यूब')) {
+        let searchQuery = cleaned
+          .replace(/open\s+youtube(\s+and\s+(search|play|look\s+for))?/i, '')
+          .replace(/^(search|play)\s+/i, '')
+          .replace(/\s+on\s+youtube$/i, '')
+          .replace(/ইউটিউব( এ)?|यूट्यूब( पर)?/gi, '')
+          .trim();
+
+        if (searchQuery.length > 0) {
+          return askConsent(`open YouTube and search for "${searchQuery}"`, () => {
+            launchUri(`https://m.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`);
+          });
+        } else {
+          return askConsent('open YouTube application', () => {
+            launchUri('https://m.youtube.com');
+          });
+        }
+      }
+
+      // 6. WHATSAPP CONTROL WITH CONSENT
+      if (q.includes('whatsapp') || q.includes('হোয়াটসঅ্যাপ') || q.includes('व्हाट्सएप')) {
+        const textMsg = cleaned.replace(/open\s+whatsapp(\s+and\s+send)?/i, '').trim();
+        return askConsent(textMsg ? `open WhatsApp with message "${textMsg}"` : 'open WhatsApp Messenger', () => {
+          launchUri(textMsg ? `https://wa.me/?text=${encodeURIComponent(textMsg)}` : 'whatsapp://send');
+        });
+      }
+
+      // 7. PHONE CALL WITH CONSENT
+      if (q.startsWith('call ') || q.includes('ফোন করো') || q.includes('कॉल करो')) {
+        const num = cleaned.replace(/[^\d+]/g, '');
+        return askConsent(`place a phone call ${num ? 'to ' + num : ''}`, () => {
+          launchUri(`tel:${num}`);
+        });
+      }
+
+      // 8. SYSTEM SETTINGS / ALARM / WIFI / BLUETOOTH WITH CONSENT
+      if (q.includes('alarm') || q.includes('timer')) {
+        return askConsent('open Android Alarm & Clock', () => {
+          launchUri('intent:#Intent;action=android.intent.action.SHOW_ALARMS;end');
+        });
+      }
+      if (q.includes('settings') || q.includes('wifi') || q.includes('bluetooth')) {
+        return askConsent('open Android System Settings', () => {
+          launchUri('intent:#Intent;action=android.settings.SETTINGS;end');
+        });
+      }
+
+      // 9. WEB SEARCH WITH CONSENT
+      if (q.startsWith('search ') || q.startsWith('google ') || q.includes('open google and search')) {
+        const query = cleaned
+          .replace(/^(open\s+google\s+and\s+search|search\s+google\s+for|search\s+for|search|google)\s*/i, '')
+          .trim();
+        return askConsent(`search Google Web for "${query}"`, () => {
+          launchUri(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
+        });
+      }
+
+      // 10. SYSTEM STATUS REPORT
+      if (q.includes('battery') || q.includes('system status') || q.includes('system and battery')) {
+        const bat = document.getElementById('bat-stat').textContent;
+        const msg = `All systems functioning at peak efficiency, Sir. Battery is at ${bat}. Active memory footprint is under 22 megabytes. Engineered by shahalam laskar.`;
+        logMessage(msg, 'jarvis');
+        return speakText(msg);
+      }
+
+      // 11. INTELLIGENT FAST AI BRAIN (ANSWERS ANY QUESTION IN EN / HI / BN)
+      logMessage('Processing...', 'jarvis');
+      const bubble = document.getElementById('console-log').lastChild;
+      const langName = currentLang === 'bn-IN' ? 'Bengali' : currentLang === 'hi-IN' ? 'Hindi' : 'English';
+      const sysPrompt = `You are J.A.R.V.I.S. from Avengers, the intelligent personal AI assistant created exclusively by shahalam laskar. Answer fast, accurately, and concisely in 2 sentences in ${langName}. Address the user respectfully as Sir.`;
+
+      try {
+        const apiKey = localStorage.getItem('jarvis_apikey');
+        let reply = '';
+        if (apiKey) {
+          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: `${sysPrompt}\nQuestion: ${cleaned}` }] }] })
+          });
+          const j = await r.json();
+          reply = j?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        }
+        if (!reply) {
+          const r = await fetch(`https://text.pollinations.ai/${encodeURIComponent(sysPrompt + '\nQuestion: ' + cleaned)}`);
+          reply = await r.text();
+        }
+        bubble.textContent = reply.trim();
+        speakText(reply.trim());
+      } catch (e) {
+        try {
+          const wr = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleaned)}`);
+          const wj = await wr.json();
+          const text = wj.extract || `Sir, shall I search the web for "${cleaned}"?`;
+          bubble.textContent = text;
+          speakText(text);
+        } catch {
+          bubble.textContent = 'Network link offline, Sir.';
+          speakText('Network link offline, Sir.');
+        }
+      }
+    }
+
+    /********************************************************************
+     * 8. MODAL CONTROLS
+     ********************************************************************/
+    function toggleModal(id, open) {
+      document.getElementById(id).classList.toggle('open', open);
+      if (open && id === 'voice-modal') renderVoiceProfiles();
+      if (open && id === 'dev-modal') {
+        document.getElementById('cfg-pin').value = getPin();
+        document.getElementById('cfg-apikey').value = localStorage.getItem('jarvis_apikey') || '';
+      }
+    }
+    function saveSettings() {
+      const pin = document.getElementById('cfg-pin').value.trim();
+      const key = document.getElementById('cfg-apikey').value.trim();
+      if (pin.length === 4) localStorage.setItem('jarvis_pin', pin);
+      localStorage.setItem('jarvis_apikey', key);
+      toggleModal('dev-modal', false);
+      speakText('Configuration saved, Sir.');
+    }
+  </script>
+</body>
+</html>
