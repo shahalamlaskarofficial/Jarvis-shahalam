@@ -1,4 +1,4 @@
-name: Build JARVIS Android APK (shahalam laskar)
+name: Build Jarvis Android APK (Shahalam Laskar)
 
 on:
   push:
@@ -21,108 +21,71 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Prepare Android SDK Build Tools 34
+      - name: Assemble Native Jarvis Android Project
         run: |
-          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
-          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          mkdir -p build_apk/src/com/shahalam/jarvis
+          mkdir -p build_apk/res/values
+          mkdir -p build_apk/assets
+          mkdir -p build_apk/obj
 
-      - name: Generate Native Android Assistant Project & Compile APK
-        run: |
-          BUILD_TOOLS="${ANDROID_HOME}/build-tools/34.0.0"
-          PLATFORM="${ANDROID_HOME}/platforms/android-34/android.jar"
+          cp index.html build_apk/assets/index.html
+          if [ -f logo.png ]; then cp logo.png build_apk/assets/logo.png; fi
 
-          mkdir -p build/gen build/obj build/apk
-          mkdir -p src/com/shahalamlaskar/jarvis
-          mkdir -p res/xml res/values assets
-
-          cp index.html assets/index.html
-
-          cat << 'EOF' > res/values/strings.xml
+          cat << 'EOF' > build_apk/res/values/strings.xml
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <string name="app_name">J.A.R.V.I.S.</string>
-              <string name="dev_name">shahalam laskar</string>
+              <string name="app_name">Jarvis</string>
           </resources>
           EOF
 
-          cat << 'EOF' > res/xml/device_admin.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <device-admin xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-policies>
-                  <force-lock />
-              </uses-policies>
-          </device-admin>
-          EOF
-
-          cat << 'EOF' > AndroidManifest.xml
+          cat << 'EOF' > build_apk/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.shahalamlaskar.jarvis"
-              android:versionCode="1"
-              android:versionName="1.0-shahalam-laskar">
+              package="com.shahalam.jarvis"
+              android:versionCode="2"
+              android:versionName="2.0">
 
-              <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
+              <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="33" />
+
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.RECORD_AUDIO" />
               <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+              <uses-permission android:name="android.permission.CALL_PHONE" />
+              <uses-permission android:name="android.permission.CAMERA" />
+              <uses-permission android:name="android.permission.FLASHLIGHT" />
 
               <application
                   android:label="@string/app_name"
-                  android:hardwareAccelerated="true"
                   android:usesCleartextTraffic="true"
-                  android:theme="@android:style/Theme.Black.NoTitleBar">
+                  android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
-                      android:launchMode="singleTask"
                       android:configChanges="orientation|screenSize|keyboardHidden">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
-                      <!-- Register as Android Default Digital Assistant -->
                       <intent-filter>
                           <action android:name="android.intent.action.ASSIST" />
-                          <action android:name="android.intent.action.VOICE_COMMAND" />
                           <category android:name="android.intent.category.DEFAULT" />
                       </intent-filter>
                   </activity>
-
-                  <!-- Native Hardware Screen Lock Admin Receiver ("Jarvis Lock") -->
-                  <receiver
-                      android:name=".LockAdminReceiver"
-                      android:permission="android.permission.BIND_DEVICE_ADMIN"
-                      android:exported="true">
-                      <meta-data
-                          android:name="android.app.device_admin"
-                          android:resource="@xml/device_admin" />
-                      <intent-filter>
-                          <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-                      </intent-filter>
-                  </receiver>
               </application>
           </manifest>
           EOF
 
-          cat << 'EOF' > src/com/shahalamlaskar/jarvis/LockAdminReceiver.java
-          package com.shahalamlaskar.jarvis;
-          import android.app.admin.DeviceAdminReceiver;
-          public class LockAdminReceiver extends DeviceAdminReceiver {}
-          EOF
-
-          cat << 'EOF' > src/com/shahalamlaskar/jarvis/MainActivity.java
-          package com.shahalamlaskar.jarvis;
+          cat << 'EOF' > build_apk/src/com/shahalam/jarvis/MainActivity.java
+          package com.shahalam.jarvis;
 
           import android.Manifest;
           import android.app.Activity;
-          import android.app.admin.DevicePolicyManager;
-          import android.content.ComponentName;
           import android.content.Context;
           import android.content.Intent;
           import android.content.pm.PackageManager;
+          import android.hardware.camera2.CameraManager;
           import android.net.Uri;
-          import android.os.Build;
           import android.os.Bundle;
           import android.speech.RecognizerIntent;
           import android.speech.tts.TextToSpeech;
@@ -136,113 +99,114 @@ jobs:
           import java.util.ArrayList;
           import java.util.Locale;
 
-          public class MainActivity extends Activity implements TextToSpeech.OnInitListener {
+          public class MainActivity extends Activity {
               private WebView webView;
               private TextToSpeech tts;
-              private DevicePolicyManager dpm;
-              private ComponentName adminComp;
-              private static final int REQ_SPEECH = 101;
+              private static final int REQ_SPEECH = 1001;
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-                  adminComp = new ComponentName(this, LockAdminReceiver.class);
-                  tts = new TextToSpeech(this, this);
-
-                  if (Build.VERSION.SDK_INT >= 23) {
-                      if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                          requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1);
-                      }
-                  }
-
                   webView = new WebView(this);
-                  WebSettings s = webView.getSettings();
-                  s.setJavaScriptEnabled(true);
-                  s.setDomStorageEnabled(true);
-                  s.setMediaPlaybackRequiresUserGesture(false);
+                  setContentView(webView);
+
+                  requestPermissions(new String[]{
+                      Manifest.permission.RECORD_AUDIO,
+                      Manifest.permission.CALL_PHONE
+                  }, 100);
+
+                  tts = new TextToSpeech(this, status -> {
+                      if (status == TextToSpeech.SUCCESS) {
+                          tts.setLanguage(Locale.UK);
+                          tts.setPitch(0.88f);
+                          tts.setSpeechRate(1.02f);
+                      }
+                  });
+
+                  WebSettings ws = webView.getSettings();
+                  ws.setJavaScriptEnabled(true);
+                  ws.setDomStorageEnabled(true);
+                  ws.setMediaPlaybackRequiresUserGesture(false);
+                  ws.setAllowFileAccess(true);
 
                   webView.setWebViewClient(new WebViewClient());
                   webView.setWebChromeClient(new WebChromeClient() {
                       @Override
                       public void onPermissionRequest(final PermissionRequest request) {
-                          runOnUiThread(() -> request.grant(request.getResources()));
+                          request.grant(request.getResources());
                       }
                   });
 
-                  webView.addJavascriptInterface(new JarvisBridge(), "AndroidJarvis");
-                  setContentView(webView);
+                  webView.addJavascriptInterface(new NativeBridge(), "NativeJarvis");
                   webView.loadUrl("file:///android_asset/index.html");
               }
 
-              @Override
-              public void onInit(int status) {
-                  if (status == TextToSpeech.SUCCESS) {
-                      tts.setLanguage(Locale.UK);
-                      tts.setPitch(0.84f);
-                      tts.setSpeechRate(1.05f);
-                  }
-              }
-
-              public class JarvisBridge {
+              public class NativeBridge {
                   @JavascriptInterface
-                  public void speak(String text, String langTag) {
-                      if (tts == null) return;
-                      if (langTag != null && langTag.startsWith("hi")) {
-                          tts.setLanguage(new Locale("hi", "IN"));
-                          tts.setPitch(0.92f);
-                      } else if (langTag != null && langTag.startsWith("bn")) {
-                          tts.setLanguage(new Locale("bn", "IN"));
-                          tts.setPitch(0.92f);
-                      } else {
-                          tts.setLanguage(Locale.UK);
-                          tts.setPitch(0.84f);
-                      }
-                      tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "jarvis_utt");
-                  }
-
-                  @JavascriptInterface
-                  public void lockPhone() {
-                      if (dpm != null && dpm.isAdminActive(adminComp)) {
-                          dpm.lockNow();
-                      } else {
-                          requestAdmin();
-                      }
-                  }
-
-                  @JavascriptInterface
-                  public void requestAdmin() {
-                      Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-                      intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComp);
-                      intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Allow J.A.R.V.I.S. (shahalam laskar) to lock screen on command.");
-                      startActivity(intent);
-                  }
-
-                  @JavascriptInterface
-                  public void openUri(String uriStr) {
-                      try {
-                          Intent intent;
-                          if (uriStr.startsWith("intent:")) {
-                              intent = Intent.parseUri(uriStr, Intent.URI_INTENT_SCHEME);
-                          } else {
-                              intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uriStr));
-                          }
-                          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                          startActivity(intent);
-                      } catch (Exception e) {
-                          Intent webFallback = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com"));
-                          startActivity(webFallback);
-                      }
-                  }
-
-                  @JavascriptInterface
-                  public void startListening(String lang) {
+                  public void startVoice(String lang) {
                       runOnUiThread(() -> {
                           try {
-                              Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                              i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                              i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang);
-                              startActivityForResult(i, REQ_SPEECH);
+                              Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                              intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                              intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang != null ? lang : "en-IN");
+                              intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to Jarvis...");
+                              startActivityForResult(intent, REQ_SPEECH);
+                          } catch (Exception e) {
+                              webView.evaluateJavascript("window.onNativeSpeechResult('');", null);
+                          }
+                      });
+                  }
+
+                  @JavascriptInterface
+                  public void speak(String text, String lang) {
+                      if (tts != null) {
+                          if (lang != null && lang.startsWith("hi")) {
+                              tts.setLanguage(new Locale("hi", "IN"));
+                          } else if (lang != null && lang.startsWith("bn")) {
+                              tts.setLanguage(new Locale("bn", "IN"));
+                          } else {
+                              tts.setLanguage(Locale.UK);
+                          }
+                          tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "jarvis_utt");
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public void directCall(String number) {
+                      runOnUiThread(() -> {
+                          try {
+                              Uri uri = Uri.parse("tel:" + Uri.encode(number));
+                              if (checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                                  Intent callIntent = new Intent(Intent.ACTION_CALL, uri);
+                                  startActivity(callIntent);
+                              } else {
+                                  requestPermissions(new String[]{Manifest.permission.CALL_PHONE}, 101);
+                                  Intent dialIntent = new Intent(Intent.ACTION_DIAL, uri);
+                                  startActivity(dialIntent);
+                              }
+                          } catch (Exception ignored) {}
+                      });
+                  }
+
+                  @JavascriptInterface
+                  public void toggleFlash(boolean state) {
+                      try {
+                          CameraManager cm = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+                          String camId = cm.getCameraIdList()[0];
+                          cm.setTorchMode(camId, state);
+                      } catch (Exception ignored) {}
+                  }
+
+                  @JavascriptInterface
+                  public void openApp(String pkg, String fallbackUrl) {
+                      runOnUiThread(() -> {
+                          try {
+                              Intent launch = getPackageManager().getLaunchIntentForPackage(pkg);
+                              if (launch != null) {
+                                  startActivity(launch);
+                              } else if (fallbackUrl != null && !fallbackUrl.isEmpty()) {
+                                  startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl)));
+                              }
                           } catch (Exception ignored) {}
                       });
                   }
@@ -251,87 +215,52 @@ jobs:
               @Override
               protected void onActivityResult(int requestCode, int resultCode, Intent data) {
                   super.onActivityResult(requestCode, resultCode, data);
-                  if (requestCode == REQ_SPEECH && resultCode == RESULT_OK && data != null) {
-                      ArrayList<String> res = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                      if (res != null && !res.isEmpty()) {
-                          String spoken = JSONObject.quote(res.get(0));
-                          webView.evaluateJavascript("window.onNativeSpeechResult(" + spoken + ");", null);
+                  if (requestCode == REQ_SPEECH) {
+                      if (resultCode == RESULT_OK && data != null) {
+                          ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                          if (matches != null && !matches.isEmpty()) {
+                              String spoken = matches.get(0);
+                              webView.evaluateJavascript("window.onNativeSpeechResult(" + JSONObject.quote(spoken) + ");", null);
+                              return;
+                          }
                       }
+                      webView.evaluateJavascript("window.onNativeSpeechResult('');", null);
                   }
-              }
-
-              // Zero Background Drain Lifecycle
-              @Override
-              protected void onPause() {
-                  super.onPause();
-                  if (webView != null) {
-                      webView.onPause();
-                      webView.pauseTimers();
-                  }
-              }
-
-              @Override
-              protected void onResume() {
-                  super.onResume();
-                  if (webView != null) {
-                      webView.onResume();
-                      webView.resumeTimers();
-                  }
-              }
-
-              @Override
-              protected void onDestroy() {
-                  if (tts != null) {
-                      tts.stop();
-                      tts.shutdown();
-                  }
-                  super.onDestroy();
               }
           }
           EOF
 
-          # 1. Compile and link resources + assets/index.html
-          ${BUILD_TOOLS}/aapt2 compile --dir res -o build/resources.zip
-          ${BUILD_TOOLS}/aapt2 link \
-            -I "${PLATFORM}" \
-            --manifest AndroidManifest.xml \
-            -A assets \
-            -o build/apk/jarvis-unaligned.apk \
-            --java build/gen \
-            build/resources.zip
+      - name: Compile and Sign Jarvis APK
+        run: |
+          cd build_apk
+          BUILD_TOOLS=$(ls -1 $ANDROID_HOME/build-tools | sort -V | tail -n 1)
+          PLATFORM=$(ls -1 $ANDROID_HOME/platforms | sort -V | tail -n 1)
+          AAPT="$ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt"
+          D8="$ANDROID_HOME/build-tools/$BUILD_TOOLS/d8"
+          ZIPALIGN="$ANDROID_HOME/build-tools/$BUILD_TOOLS/zipalign"
+          APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS/apksigner"
+          ANDROID_JAR="$ANDROID_HOME/platforms/$PLATFORM/android.jar"
 
-          # 2. Compile Java sources
-          javac -source 11 -target 11 -cp "${PLATFORM}" -d build/obj \
-            build/gen/com/shahalamlaskar/jarvis/R.java \
-            src/com/shahalamlaskar/jarvis/LockAdminReceiver.java \
-            src/com/shahalamlaskar/jarvis/MainActivity.java
+          $AAPT package -f -m -J src -M AndroidManifest.xml -S res -I "$ANDROID_JAR"
+          javac -source 11 -target 11 -classpath "$ANDROID_JAR" -d obj src/com/shahalam/jarvis/*.java
+          $D8 --lib "$ANDROID_JAR" --output . obj/com/shahalam/jarvis/*.class
+          $AAPT package -f -M AndroidManifest.xml -S res -A assets -I "$ANDROID_JAR" -F unaligned.apk
+          zip -uj unaligned.apk classes.dex
+          $ZIPALIGN -f 4 unaligned.apk aligned.apk
 
-          # 3. Convert .class files to DEX bytecode
-          ${BUILD_TOOLS}/d8 --lib "${PLATFORM}" --output build/apk/ build/obj/com/shahalamlaskar/jarvis/*.class
+          keytool -genkeypair -v -keystore jarvis.keystore -alias jarvis -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass 231123 -keypass 231123 -dname "CN=Shahalam Laskar, OU=AI, O=Shahalam, L=Assam, ST=AS, C=IN"
 
-          # 4. Package classes.dex into APK, zipalign, and sign
-          cd build/apk
-          zip -j jarvis-unaligned.apk classes.dex
-          ${BUILD_TOOLS}/zipalign -p -f 4 jarvis-unaligned.apk jarvis-aligned.apk
+          $APKSIGNER sign --ks jarvis.keystore --ks-pass pass:231123 --key-pass pass:231123 --out ../Jarvis.apk aligned.apk
+          cp ../Jarvis.apk ../JARVIS-shahalam-laskar.apk
 
-          keytool -genkeypair -v -keystore jarvis.keystore -alias shahalam \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass 23112009 -keypass 23112009 \
-            -dname "CN=shahalam laskar, OU=AI, O=shahalam laskar, L=Assam, S=Assam, C=IN"
-
-          ${BUILD_TOOLS}/apksigner sign --ks jarvis.keystore \
-            --ks-pass pass:23112009 --key-pass pass:23112009 \
-            --out JARVIS-shahalam-laskar.apk jarvis-aligned.apk
-
-      - name: Upload APK to Actions Tab
-        uses: actions/upload-artifact@v4
-        with:
-          name: JARVIS-shahalam-laskar-APK
-          path: build/apk/JARVIS-shahalam-laskar.apk
-
-      - name: Publish Direct APK Download to Releases
+      - name: Publish Jarvis APK to Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0-jarvis
-          name: "J.A.R.V.I.S. Android APK (by shahalam laskar)"
-          files: build/apk/JARVIS-shahalam-laskar.apk
+          tag_name: v2.0-jarvis
+          name: "Jarvis v2.0 Android APK (by Shahalam Laskar)"
+          files: |
+            Jarvis.apk
+            JARVIS-shahalam-laskar.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
