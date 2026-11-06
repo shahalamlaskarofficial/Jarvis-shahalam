@@ -7,13 +7,14 @@
 <style>
   :root {
     --bg: #020409;
-    --panel: rgba(9, 18, 34, 0.82);
+    --panel: rgba(9, 18, 34, 0.84);
     --cyan: #00f0ff;
     --blue: #0066ff;
     --text: #e6f9ff;
     --muted: #6e8fa6;
     --danger: #ff3366;
     --success: #00ff9d;
+    --warn: #ffb703;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
   body {
@@ -32,7 +33,7 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
   }
   .lock-title { color: var(--cyan); font-size: 1.4rem; letter-spacing: 3px; font-weight: 800; margin-bottom: 6px; }
-  .lock-sub { color: var(--muted); font-size: 0.76rem; margin-bottom: 24px; letter-spacing: 1px; text-align: center; }
+  .lock-sub { color: var(--muted); font-size: 0.75rem; margin-bottom: 24px; letter-spacing: 1px; text-align: center; }
   .pin-dots { display: flex; gap: 14px; margin-bottom: 28px; }
   .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--cyan); transition: 0.18s; }
   .dot.filled { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
@@ -48,24 +49,33 @@
   /* HEADER */
   header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 14px; border-bottom: 1px solid rgba(0, 240, 255, 0.15);
-    background: rgba(2, 4, 9, 0.75);
+    padding: 10px 14px; border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+    background: rgba(2, 4, 9, 0.8);
   }
-  .brand h1 { font-size: 1.2rem; font-weight: 800; color: var(--cyan); letter-spacing: 2.5px; }
-  .brand span { font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; display: block; }
+  .brand h1 { font-size: 1.18rem; font-weight: 800; color: var(--cyan); letter-spacing: 2.5px; }
+  .brand span { font-size: 0.62rem; color: var(--muted); letter-spacing: 1px; display: block; }
   .top-controls { display: flex; gap: 6px; align-items: center; }
   .pill-btn {
     background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.28);
-    color: var(--cyan); padding: 6px 9px; border-radius: 18px; font-size: 0.72rem; font-weight: 600; cursor: pointer;
+    color: var(--cyan); padding: 5px 9px; border-radius: 18px; font-size: 0.72rem; font-weight: 600; cursor: pointer;
   }
   .pill-btn:active { background: var(--cyan); color: #000; }
 
+  /* LIVE TELEMETRY HUD BAR */
+  .hud-bar {
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 6px 12px; background: rgba(0, 240, 255, 0.04);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+    font-size: 0.68rem; color: var(--muted); letter-spacing: 0.5px;
+  }
+  .hud-item b { color: var(--cyan); }
+
   /* FIXED ARC-REACTOR LOGO CORE */
   .core-section {
-    display: flex; flex-direction: column; align-items: center; padding: 14px 16px 8px;
+    display: flex; flex-direction: column; align-items: center; padding: 12px 16px 6px;
   }
   .orb-wrap {
-    position: relative; width: 108px; height: 108px; border-radius: 50%;
+    position: relative; width: 102px; height: 102px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
   }
   .orb-ring {
@@ -82,12 +92,12 @@
     box-shadow: 0 0 25px var(--success); animation: pulse 0.9s infinite alternate;
   }
   .orb-logo {
-    width: 94px; height: 94px; border-radius: 50%; overflow: hidden;
+    width: 88px; height: 88px; border-radius: 50%; overflow: hidden;
     border: 2px solid var(--cyan); box-shadow: 0 0 22px rgba(0, 240, 255, 0.35), inset 0 0 18px rgba(0, 240, 255, 0.25);
     background: radial-gradient(circle, #06223f 0%, #02060d 80%);
-    display: flex; align-items: center; justify-content: center; position: relative;
+    display: flex; align-items: center; justify-content: center;
   }
-  .status-line { font-size: 0.82rem; color: var(--cyan); margin-top: 10px; font-weight: 600; letter-spacing: 0.5px; }
+  .status-line { font-size: 0.8rem; color: var(--cyan); margin-top: 8px; font-weight: 600; letter-spacing: 0.5px; }
 
   @keyframes spin { 100% { transform: rotate(360deg); } }
   @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
@@ -98,7 +108,7 @@
     flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;
   }
   .msg {
-    max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 0.88rem; line-height: 1.42;
+    max-width: 86%; padding: 10px 14px; border-radius: 14px; font-size: 0.88rem; line-height: 1.42;
     word-wrap: break-word; user-select: text;
   }
   .msg.jarvis {
@@ -109,6 +119,10 @@
     align-self: flex-end; background: linear-gradient(135deg, #0055ff, #00b4d8);
     color: #fff; border-bottom-right-radius: 4px;
   }
+  .msg img {
+    width: 100%; max-width: 260px; border-radius: 10px; margin-top: 8px;
+    border: 1px solid var(--cyan); display: block;
+  }
 
   /* QUICK CHIPS */
   .chips {
@@ -117,31 +131,31 @@
   .chips::-webkit-scrollbar { display: none; }
   .chip {
     white-space: nowrap; background: rgba(255,255,255,0.04); border: 1px solid rgba(0,240,255,0.22);
-    color: var(--muted); padding: 6px 12px; border-radius: 16px; font-size: 0.74rem; cursor: pointer;
+    color: var(--muted); padding: 6px 12px; border-radius: 16px; font-size: 0.73rem; cursor: pointer;
   }
   .chip:active { background: rgba(0,240,255,0.2); color: #fff; }
 
   /* BOTTOM INPUT BAR */
   .bottom-bar {
     display: flex; align-items: center; gap: 8px; padding: 10px 14px 16px;
-    background: rgba(2, 4, 9, 0.9); border-top: 1px solid rgba(0, 240, 255, 0.15);
+    background: rgba(2, 4, 9, 0.92); border-top: 1px solid rgba(0, 240, 255, 0.15);
   }
   #cmdInput {
     flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.28);
-    color: var(--text); padding: 11px 14px; border-radius: 24px; font-size: 0.88rem; outline: none;
+    color: var(--text); padding: 11px 14px; border-radius: 24px; font-size: 0.86rem; outline: none;
   }
   .send-btn, .mic-fab {
-    width: 46px; height: 46px; border-radius: 50%; border: none;
-    display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer;
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center; font-size: 1.15rem; cursor: pointer;
   }
   .send-btn { background: rgba(0, 240, 255, 0.14); color: var(--cyan); border: 1px solid var(--cyan); }
   .mic-fab {
-    width: 52px; height: 52px; background: linear-gradient(135deg, var(--cyan), var(--blue));
+    width: 50px; height: 50px; background: linear-gradient(135deg, var(--cyan), var(--blue));
     color: #000; box-shadow: 0 0 16px rgba(0, 240, 255, 0.45);
   }
   .mic-fab.active { background: var(--danger); color: #fff; box-shadow: 0 0 20px var(--danger); }
 
-  /* MODALS (CONTACTS & DEVELOPER) */
+  /* MODALS */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500;
     display: none; align-items: center; justify-content: center; padding: 18px;
@@ -171,7 +185,7 @@
 <!-- PIN LOCK OVERLAY -->
 <div id="lockScreen">
   <div class="lock-title">JARVIS SECURITY</div>
-  <div class="lock-sub">ENTER ACCESS PIN (DEFAULT: 2311)</div>
+  <div class="lock-sub" id="lockSub">ENTER ACCESS PIN (DEFAULT: 2311)</div>
   <div class="pin-dots">
     <div class="dot" id="d0"></div>
     <div class="dot" id="d1"></div>
@@ -190,7 +204,7 @@
     <div class="key" onclick="pressPin('9')">9</div>
     <div class="key" onclick="clearPin()">C</div>
     <div class="key" onclick="pressPin('0')">0</div>
-    <div class="key" onclick="unlockDefault()">⚡</div>
+    <div class="key" onclick="unlockFast()">⚡</div>
   </div>
 </div>
 
@@ -198,7 +212,7 @@
 <header>
   <div class="brand">
     <h1>JARVIS</h1>
-    <span>NEURAL OS v3.0</span>
+    <span>NEURAL OS v4.0</span>
   </div>
   <div class="top-controls">
     <button class="pill-btn" id="titleBtn" onclick="toggleTitle()">Sir</button>
@@ -209,13 +223,20 @@
   </div>
 </header>
 
+<!-- LIVE TELEMETRY HUD -->
+<div class="hud-bar">
+  <div class="hud-item">BAT: <b id="hudBat">--%</b></div>
+  <div class="hud-item">PING: <b id="hudPing">-- ms</b></div>
+  <div class="hud-item">MODE: <b id="hudMode">STANDARD</b></div>
+</div>
+
 <!-- FIXED PERMANENT JARVIS NEURAL CORE LOGO -->
 <div class="core-section">
   <div class="orb-wrap" id="orbWrap" onclick="triggerVoice()">
     <div class="orb-ring"></div>
     <div class="orb-ring-inner"></div>
     <div class="orb-logo">
-      <svg viewBox="0 0 100 100" width="84" height="84">
+      <svg viewBox="0 0 100 100" width="80" height="80">
         <defs>
           <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stop-color="#ffffff" />
@@ -239,18 +260,18 @@
 
 <!-- QUICK ACTION CHIPS -->
 <div class="chips">
-  <div class="chip" onclick="runCommand('System status')">🔋 Status</div>
+  <div class="chip" onclick="runCommand('Activate Gaming Protocol')">🎮 Gaming Mode</div>
+  <div class="chip" onclick="runCommand('Activate Study Protocol')">📚 Study Mode</div>
+  <div class="chip" onclick="runCommand('Generate image of futuristic iron man helmet')">🎨 AI Art</div>
+  <div class="chip" onclick="runCommand('Strobe flashlight')">🚨 SOS Strobe</div>
   <div class="chip" onclick="runCommand('Turn on flashlight')">🔦 Torch On</div>
-  <div class="chip" onclick="runCommand('Turn off flashlight')">🌑 Torch Off</div>
-  <div class="chip" onclick="runCommand('Lock phone')">📱 Lock Device</div>
-  <div class="chip" onclick="runCommand('Open YouTube')">▶️ YouTube</div>
-  <div class="chip" onclick="runCommand('Open WhatsApp')">💬 WhatsApp</div>
+  <div class="chip" onclick="runCommand('Lock phone')">📱 Lock Screen</div>
   <div class="chip" onclick="openDevModal()">👨‍💻 Developer</div>
 </div>
 
 <!-- INPUT & VOICE BAR -->
 <div class="bottom-bar">
-  <input type="text" id="cmdInput" placeholder="Say anything: 'Open...', 'Call...', 'Lock phone'" onkeydown="if(event.key==='Enter') submitText()">
+  <input type="text" id="cmdInput" placeholder="Ask anything, 'Draw...', 'Open...', 'Call...'" onkeydown="if(event.key==='Enter') submitText()">
   <button class="send-btn" onclick="submitText()">➤</button>
   <button class="mic-fab" id="micBtn" onclick="triggerVoice()">🎙️</button>
 </div>
@@ -258,8 +279,8 @@
 <!-- CONTACTS MODAL -->
 <div id="contactsModal" class="modal-overlay">
   <div class="modal-card">
-    <h3>📞 Speed-Dial Contacts</h3>
-    <p style="font-size:0.75rem;color:var(--muted);">Save contacts here so you can say "Call Mom" or "Call Rahul" directly.</p>
+    <h3>📞 Speed-Dial & Settings</h3>
+    <p style="font-size:0.74rem;color:var(--muted);">Save contacts so you can say "Call Mom" directly. You can also say "Change PIN to 1234" in chat.</p>
     <input type="text" id="cName" placeholder="Name (e.g., Mom, Bro, Boss)">
     <input type="tel" id="cNum" placeholder="Phone Number">
     <div style="display:flex;gap:8px;">
@@ -296,10 +317,23 @@
 </div>
 
 <script>
-  // --- 0. BATTERY & MEMORY OPTIMIZATION ---
+  // --- 0. ZERO-DRAIN BACKGROUND & TELEMETRY HUD ---
   document.addEventListener("visibilitychange", () => {
     document.body.classList.toggle("paused", document.hidden);
   });
+
+  async function updateTelemetry() {
+    if (document.hidden) return;
+    if (navigator.getBattery) {
+      try {
+        const b = await navigator.getBattery();
+        document.getElementById("hudBat").innerText = `${Math.round(b.level * 100)}%${b.charging ? "⚡" : ""}`; } catch (e) {} } const start = performance.now(); fetch("https://www.google.com/generate_204", { mode: "no-cors", cache: "no-store" }) .then(() => { const ms = Math.round(performance.now() - start); document.getElementById("hudPing").innerText = `${ms} ms`;
+      })
+      .catch(() => {
+        document.getElementById("hudPing").innerText = "OFFLINE";
+      });
+  }
+  setInterval(updateTelemetry, 15000);
 
   // --- 1. USER TITLE PREFERENCE (Sir / Miss) ---
   let userTitle = localStorage.getItem("jarvis_user_title") || "Sir";
@@ -312,71 +346,9 @@
     speak(`Understood. I will address you as ${userTitle}.`);
   }
 
-  // Initial welcome message
   window.addEventListener("DOMContentLoaded", () => {
-    addMsg(`Jarvis neural core online. How may I help you today, ${userTitle}?`, "jarvis");
-  });
-
-  // --- 2. PIN & HARDWARE DEVICE LOCK ---
-  const MASTER_PIN = localStorage.getItem("jarvis_pin") || "2311";
-  let currentPin = "";
-
-  if (sessionStorage.getItem("jarvis_unlocked") === "1") {
-    document.getElementById("lockScreen").style.display = "none";
-  }
-
-  function pressPin(digit) {
-    if (currentPin.length < 4) {
-      currentPin += digit;
-      updateDots();
-      if (currentPin.length === 4) {
-        if (currentPin === MASTER_PIN) {
-          sessionStorage.setItem("jarvis_unlocked", "1");
-          document.getElementById("lockScreen").style.display = "none";
-          speak(`Access granted.`);
-        } else {
-          speak("Invalid PIN.");
-          setTimeout(clearPin, 400);
-        }
-      }
-    }
-  }
-  function clearPin() { currentPin = ""; updateDots(); }
-  function updateDots() {
-    for (let i = 0; i < 4; i++) {
-      document.getElementById("d" + i).classList.toggle("filled", i < currentPin.length);
-    }
-  }
-  function unlockDefault() { pressPin('2'); pressPin('3'); pressPin('1'); pressPin('1'); }
-
-  function lockDeviceNow() {
-    sessionStorage.removeItem("jarvis_unlocked");
-    clearPin();
-    document.getElementById("lockScreen").style.display = "flex";
-    if (window.NativeJarvis && window.NativeJarvis.lockPhone) {
-      window.NativeJarvis.lockPhone();
-    } else {
-      speak("Interface locked.");
-    }
-  }
-
-  // --- 3. CONTACTS & DEVELOPER MODALS ---
-  let contacts = JSON.parse(localStorage.getItem("jarvis_contacts") || "{}");
-  function openContacts() { renderContacts(); document.getElementById("contactsModal").style.display = "flex"; }
-  function closeContacts() { document.getElementById("contactsModal").style.display = "none"; }
-  function openDevModal() { document.getElementById("devModal").style.display = "flex"; }
-  function closeDevModal() { document.getElementById("devModal").style.display = "none"; }
-
-  function addContact() {
-    const name = document.getElementById("cName").value.trim().toLowerCase();
-    const num = document.getElementById("cNum").value.trim();
-    if (name && num) {
-      contacts[name] = num;
-      localStorage.setItem("jarvis_contacts", JSON.stringify(contacts));
-      document.getElementById("cName").value = "";
-      document.getElementById("cNum").value = "";
-      renderContacts();
-      speak(`Saved ${name} to speed dial.`);
+    updateTelemetry();
+    addMsg(`Jarvis v4.0 online. How may I assist you, ${userTitle}?`, "jarvis"); });  // --- 2. PIN & HARDWARE DEVICE LOCK --- let masterPin = localStorage.getItem("jarvis_pin") \vert{}\vert{} "2311"; let pinDisabled = localStorage.getItem("jarvis_pin_disabled") === "1"; let currentPin = "";  if (pinDisabled \vert{}\vert{} sessionStorage.getItem("jarvis_unlocked") === "1") { document.getElementById("lockScreen").style.display = "none"; }  function pressPin(digit) { if (currentPin.length < 4) { currentPin += digit; updateDots(); if (currentPin.length === 4) { if (currentPin === masterPin) { sessionStorage.setItem("jarvis_unlocked", "1"); document.getElementById("lockScreen").style.display = "none"; speak("Access granted."); } else { speak("Invalid PIN."); setTimeout(clearPin, 400); } } } } function clearPin() { currentPin = ""; updateDots(); } function updateDots() { for (let i = 0; i < 4; i++) { document.getElementById("d" + i).classList.toggle("filled", i < currentPin.length); } } function unlockFast() { for (const ch of masterPin) pressPin(ch); }  function lockDeviceNow() { if (!pinDisabled) { sessionStorage.removeItem("jarvis_unlocked"); clearPin(); document.getElementById("lockScreen").style.display = "flex"; } if (window.NativeJarvis && window.NativeJarvis.lockPhone) { window.NativeJarvis.lockPhone(); } else { speak("Interface locked."); } }  // Called automatically when user triggers Jarvis as Default Assistant (Power Button / Swipe) window.onAssistGestureTriggered = function() { sessionStorage.setItem("jarvis_unlocked", "1"); document.getElementById("lockScreen").style.display = "none"; triggerVoice(); };  // --- 3. CONTACTS & DEVELOPER MODALS --- let contacts = JSON.parse(localStorage.getItem("jarvis_contacts") \vert{}\vert{} "{}"); function openContacts() { renderContacts(); document.getElementById("contactsModal").style.display = "flex"; } function closeContacts() { document.getElementById("contactsModal").style.display = "none"; } function openDevModal() { document.getElementById("devModal").style.display = "flex"; } function closeDevModal() { document.getElementById("devModal").style.display = "none"; }  function addContact() { const name = document.getElementById("cName").value.trim().toLowerCase(); const num = document.getElementById("cNum").value.trim(); if (name && num) { contacts[name] = num; localStorage.setItem("jarvis_contacts", JSON.stringify(contacts)); document.getElementById("cName").value = ""; document.getElementById("cNum").value = ""; renderContacts(); speak(`Saved ${name} to speed dial.`);
     }
   }
   function renderContacts() {
@@ -392,9 +364,27 @@
     renderContacts();
   }
 
-  // --- 4. PERSISTENT MEMORY & CONVERSATION BUFFER ---
+  // --- 4. MEMORY, AUDIO SIREN & CONVERSATION BUFFER ---
   let memoryNotes = JSON.parse(localStorage.getItem("jarvis_memories") || "[]");
   let chatHistory = [];
+  let lastJarvisReply = "";
+  let audioCtx = null;
+
+  function playSiren() {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(650, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(1400, audioCtx.currentTime + 0.6);
+      osc.frequency.linearRampToValueAtTime(650, audioCtx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      setTimeout(() => { osc.stop(); audioCtx.close(); }, 3000);
+    } catch (e) {}
+  }
 
   // --- 5. TRILINGUAL SPEECH & TTS ENGINE ---
   const langs = [
@@ -411,6 +401,7 @@
 
   function speak(text) {
     const cleanText = text.replace(/J\.A\.R\.V\.I\.S\.?/gi, "Jarvis").replace(/[*#`_~]/g, "");
+    lastJarvisReply = cleanText;
     if (window.NativeJarvis && window.NativeJarvis.speak) {
       window.NativeJarvis.speak(cleanText, langs[langIdx].code);
       return;
@@ -425,15 +416,20 @@
     }
   }
 
-  function addMsg(text, sender) {
+  function addMsg(text, sender, imgUrl = null) {
     const box = document.getElementById("chatBox");
-    // Cap DOM nodes at 25 messages for strict <20MB RAM footprint
     while (box.children.length >= 25) {
       box.removeChild(box.firstChild);
     }
     const div = document.createElement("div");
     div.className = "msg " + sender;
     div.innerText = text;
+    if (imgUrl) {
+      const img = document.createElement("img");
+      img.src = imgUrl;
+      img.loading = "lazy";
+      div.appendChild(img);
+    }
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
   }
@@ -466,6 +462,9 @@
 
   function triggerVoice() {
     setStatus("Listening... Speak now", true);
+    if (window.NativeJarvis && window.NativeJarvis.vibrate) {
+      window.NativeJarvis.vibrate(45);
+    }
     if (window.NativeJarvis && window.NativeJarvis.startVoice) {
       window.NativeJarvis.startVoice(langs[langIdx].code);
     } else if (webRecognition) {
@@ -486,50 +485,147 @@
     runCommand(val);
   }
 
-  // --- 6. UNIVERSAL COMMAND ROUTER & AI BRAIN ---
+  // --- 6. UNIVERSAL COMMAND ROUTER & ADVANCED PROTOCOLS ---
   async function runCommand(rawText) {
     addMsg(rawText, "user");
     const cmd = rawText.toLowerCase().trim();
 
     // 1. DEVELOPER / CREATOR INFO
     if (cmd.includes("contact developer") || cmd.includes("who made you") || cmd.includes("who created you") || cmd.includes("who built you") || cmd.includes("developer info")) {
-      const msg = `I was designed and developed by Shahalam Laskar. You can reach him at shahalamlaskar.official@gmail.com or visit shahalamlaskar.click.`;
+      const msg = `I was designed and architected by Shahalam Laskar. You can reach him at shahalamlaskar.official@gmail.com or visit shahalamlaskar.click.`;
       addMsg(msg, "jarvis");
       speak(msg);
       openDevModal();
       return;
     }
 
-    // 2. LONG-TERM MEMORY ("Remember that...")
+    // 2. CUSTOM PIN MANAGEMENT (For Public Downloads)
+    if (cmd.startsWith("change pin to ")) {
+      const newPin = cmd.replace(/\D/g, "");
+      if (newPin.length === 4) {
+        masterPin = newPin;
+        localStorage.setItem("jarvis_pin", newPin);
+        const msg = `Security PIN successfully updated to ${newPin}, ${userTitle}.`;
+        addMsg(msg, "jarvis");
+        speak(msg);
+      } else {
+        const msg = `Please specify a 4-digit PIN, for example: "Change PIN to 1234".`;
+        addMsg(msg, "jarvis");
+        speak(msg);
+      }
+      return;
+    }
+    if (cmd.includes("disable pin") || cmd.includes("enable pin")) {
+      pinDisabled = cmd.includes("disable");
+      localStorage.setItem("jarvis_pin_disabled", pinDisabled ? "1" : "0");
+      const msg = `Startup PIN lock is now ${pinDisabled ? "disabled" : "enabled"}, ${userTitle}.`;
+      addMsg(msg, "jarvis");
+      speak(msg);
+      return;
+    }
+
+    // 3. NAMED PROTOCOLS (Gaming / Study / Stealth)
+    if (cmd.includes("gaming protocol") || cmd.includes("gaming mode")) {
+      document.getElementById("hudMode").innerText = "GAMING ⚡";
+      if (window.NativeJarvis && window.NativeJarvis.controlVolume) window.NativeJarvis.controlVolume("max");
+      updateTelemetry();
+      const ping = document.getElementById("hudPing").innerText;
+      const msg = `Gaming Protocol engaged, ${userTitle}. Audio boosted and live network ping is ${ping}.`;
+      addMsg(msg, "jarvis");
+      speak(msg);
+      return;
+    }
+    if (cmd.includes("study protocol") || cmd.includes("study mode")) {
+      document.getElementById("hudMode").innerText = "STUDY 📚";
+      if (window.NativeJarvis && window.NativeJarvis.controlVolume) window.NativeJarvis.controlVolume("mute");
+      const msg = `Study Protocol engaged, ${userTitle}. Notifications muted for deep focus.`;
+      addMsg(msg, "jarvis");
+      speak(msg);
+      return;
+    }
+    if (cmd.includes("stealth protocol") || cmd.includes("night protocol")) {
+      document.getElementById("hudMode").innerText = "STEALTH 🌑";
+      if (window.NativeJarvis) {
+        window.NativeJarvis.controlVolume("mute");
+        window.NativeJarvis.toggleFlash(false);
+      }
+      const msg = `Stealth Protocol active. Audio muted and torch disabled.`;
+      addMsg(msg, "jarvis");
+      speak(msg);
+      return;
+    }
+
+    // 4. AI IMAGE GENERATOR ("Generate image of..." / "Draw...")
+    if (cmd.startsWith("generate image") || cmd.startsWith("create image") || cmd.startsWith("draw ")) {
+      const prompt = rawText.replace(/^(generate image of|generate image|create image of|create image|draw a|draw)\s+/i, "").trim();
+      const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true`;
+      const msg = `Rendering neural visual for "${prompt}", ${userTitle}.`;
+      addMsg(msg, "jarvis", imgUrl);
+      speak(msg);
+      return;
+    }
+
+    // 5. SOS STROBE & ULTRASONIC SIREN
+    if (cmd.includes("strobe") || cmd.includes("sos flash")) {
+      const msg = `Activating high-visibility LED strobe.`;
+      addMsg(msg, "jarvis");
+      speak(msg);
+      if (window.NativeJarvis && window.NativeJarvis.strobeFlash) {
+        window.NativeJarvis.strobeFlash();
+      }
+      return;
+    }
+    if (cmd.includes("activate siren") || cmd.includes("emergency alarm")) {
+      const msg = `Sounding emergency acoustic siren.`;
+      addMsg(msg, "jarvis");
+      speak(msg);
+      playSiren();
+      return;
+    }
+
+    // 6. CLIPBOARD COPY
+    if (cmd.includes("copy last") || cmd.includes("copy reply")) {
+      if (window.NativeJarvis && window.NativeJarvis.copyToClipboard) {
+        window.NativeJarvis.copyToClipboard(lastJarvisReply);
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(lastJarvisReply);
+      }
+      const msg = `Copied my last response to your clipboard, ${userTitle}.`;
+      addMsg(msg, "jarvis");
+      speak(msg);
+      return;
+    }
+
+    // 7. LONG-TERM MEMORY ("Remember that...")
     if (cmd.startsWith("remember ") || cmd.startsWith("note that ")) {
       const fact = rawText.replace(/^(remember that|remember|note that)\s+/i, "").trim();
       memoryNotes.push(fact);
       if (memoryNotes.length > 20) memoryNotes.shift();
       localStorage.setItem("jarvis_memories", JSON.stringify(memoryNotes));
-      const msg = `Noted and saved to memory, ${userTitle}: "${fact}".`;
+      const msg = `Saved to memory, ${userTitle}: "${fact}".`;
       addMsg(msg, "jarvis");
       speak(msg);
       return;
     }
     if (cmd.includes("what do you remember") || cmd.includes("my notes")) {
       const msg = memoryNotes.length
-        ? `Here is what I have saved in memory: ${memoryNotes.join("; ")}.`
-        : `You haven't asked me to remember any notes yet, ${userTitle}. Say "Remember that..." anytime.`;
+        ? `Here is what I have stored in memory: ${memoryNotes.join("; ")}.`
+        : `Your memory bank is currently empty, ${userTitle}. Say "Remember that..." anytime.`;
       addMsg(msg, "jarvis");
       speak(msg);
       return;
     }
 
-    // 3. HARDWARE DEVICE & SCREEN LOCK
+    // 8. HARDWARE DEVICE & SCREEN LOCK
     if (cmd.includes("lock phone") || cmd.includes("lock device") || cmd.includes("lock screen") || cmd.includes("turn off screen") || cmd === "lock") {
       const msg = `Locking device now, ${userTitle}.`;
       addMsg(msg, "jarvis");
       speak(msg);
-      setTimeout(lockDeviceNow, 400);
+      setTimeout(lockDeviceNow, 350);
       return;
     }
 
-    // 4. DIRECT PHONE CALLING
+    // 9. DIRECT PHONE CALLING
     if (cmd.startsWith("call ") || cmd.startsWith("dial ") || cmd.includes("make a call to ")) {
       const target = cmd.replace(/^(hey jarvis|jarvis)?\s*(please\s*)?(make a call to|call|dial)\s+/i, "").trim();
       const digitsOnly = target.replace(/\D/g, "");
@@ -552,7 +648,7 @@
           window.location.href = `tel:${phoneToDial}`;
         }
       } else {
-        const msg = `Please save ${target}'s number once in Contacts, or speak the digits directly.`;
+        const msg = `Please save ${target}'s number once in Contacts, or say the digits directly.`;
         addMsg(msg, "jarvis");
         speak(msg);
         openContacts();
@@ -561,7 +657,7 @@
       return;
     }
 
-    // 5. FLASHLIGHT / TORCH
+    // 10. FLASHLIGHT / TORCH
     if (cmd.includes("flashlight") || cmd.includes("torch")) {
       const turnOn = !cmd.includes("off");
       if (window.NativeJarvis && window.NativeJarvis.toggleFlash) {
@@ -573,7 +669,7 @@
       return;
     }
 
-    // 6. VOLUME CONTROL
+    // 11. VOLUME CONTROL
     if (cmd.includes("volume") || cmd.includes("mute") || cmd.includes("unmute")) {
       let dir = "up";
       if (cmd.includes("down") || cmd.includes("lower") || cmd.includes("decrease")) dir = "down";
@@ -589,7 +685,7 @@
       return;
     }
 
-    // 7. SET ALARM
+    // 12. SET ALARM
     if (cmd.includes("set alarm") || cmd.includes("wake me up at")) {
       const match = cmd.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
       if (match && window.NativeJarvis && window.NativeJarvis.setAlarm) {
@@ -599,116 +695,12 @@
         if (ampm === "pm" && hr < 12) hr += 12;
         if (ampm === "am" && hr === 12) hr = 0;
         window.NativeJarvis.setAlarm(hr, min);
-        const msg = `Setting your alarm for ${hr}:${min < 10 ? '0'+min : min}.`;
+        const msg = `Setting alarm for ${hr}:${min < 10 ? '0'+min : min}.`;
         addMsg(msg, "jarvis");
         speak(msg);
         return;
       }
     }
 
-    // 8. WHATSAPP MESSAGE
-    if (cmd.includes("whatsapp") && (cmd.includes("send") || cmd.includes("message"))) {
-      const text = rawText.replace(/^(send|message|on whatsapp|whatsapp|to)\s*/gi, "").trim();
-      const msg = `Opening WhatsApp with your message.`;
-      addMsg(msg, "jarvis");
-      speak(msg);
-      window.location.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
-      return;
-    }
-
-    // 9. PLAY ON YOUTUBE / SPOTIFY
-    if (cmd.startsWith("play ")) {
-      const query = rawText.replace(/^play\s+/i, "").replace(/\s+on youtube$/i, "").trim();
-      const msg = `Playing ${query} on YouTube.`;
-      addMsg(msg, "jarvis");
-      speak(msg);
-      window.location.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-      return;
-    }
-
-    // 10. UNIVERSAL APP & SETTINGS LAUNCHER (Opens ANY installed app on the phone)
-    if (cmd.startsWith("open ") || cmd.startsWith("launch ")) {
-      const targetApp = cmd.replace(/^(open|launch)\s+/i, "").trim();
-      if (window.NativeJarvis && window.NativeJarvis.openAnyApp) {
-        const opened = window.NativeJarvis.openAnyApp(targetApp);
-        if (opened) {
-          const msg = `Opening ${targetApp}.`;
-          addMsg(msg, "jarvis");
-          speak(msg);
-          return;
-        }
-      }
-      // Web fallback if app is a known website
-      const webFallbacks = {
-        "youtube": "https://m.youtube.com",
-        "whatsapp": "https://wa.me/",
-        "instagram": "https://instagram.com",
-        "facebook": "https://facebook.com",
-        "google": "https://google.com",
-        "github": "https://github.com"
-      };
-      if (webFallbacks[targetApp]) {
-        const msg = `Opening ${targetApp}.`;
-        addMsg(msg, "jarvis");
-        speak(msg);
-        window.location.href = webFallbacks[targetApp];
-        return;
-      }
-    }
-
-    // 11. SYSTEM STATUS / TIME / BATTERY
-    if (cmd.includes("time") || cmd.includes("battery") || cmd.includes("system status")) {
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      let batStr = "";
-      if (navigator.getBattery) {
-        try {
-          const b = await navigator.getBattery();
-          batStr = ` Battery is at ${Math.round(b.level * 100)}%${b.charging ? " (Charging)" : ""}.`;
-        } catch (e) {}
-      }
-      const msg = `It is ${timeStr}.${batStr} All systems are running optimally, ${userTitle}.`;
-      addMsg(msg, "jarvis");
-      speak(msg);
-      return;
-    }
-
-    // 12. CLOUD AI BRAIN WITH CONTEXT MEMORY
-    setStatus("Processing...", false);
-    chatHistory.push({ role: "user", content: rawText });
-    if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
-
-    try {
-      const memContext = memoryNotes.length ? `User saved notes: ${memoryNotes.join("; ")}.` : "";
-      const sysPrompt = `You are Jarvis, an ultra-intelligent, polite AI assistant architected by Shahalam Laskar (Email: shahalamlaskar.official@gmail.com, Website: shahalamlaskar.click). Address the user politely as "${userTitle}" occasionally, never repeat any personal name on every message. ${memContext} Keep responses concise (1 to 3 sentences) and natural for speech.`;
-
-      const res = await fetch("https://text.pollinations.ai/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: sysPrompt },
-            ...chatHistory
-          ],
-          model: "openai"
-        })
-      });
-      const reply = (await res.text()).trim();
-      setStatus("Online • Ready", false);
-      if (reply) {
-        chatHistory.push({ role: "assistant", content: reply });
-        addMsg(reply, "jarvis");
-        speak(reply);
-      } else {
-        throw new Error("Empty reply");
-      }
-    } catch (err) {
-      setStatus("Online • Ready", false);
-      const fallback = `Searching Google for "${rawText}".`;
-      addMsg(fallback, "jarvis");
-      speak(fallback);
-      window.open(`https://www.google.com/search?q=${encodeURIComponent(rawText)}`, "_blank");
-    }
-  }
-</script>
-</body>
-</html>
+    // 13. WHATSAPP MESSAGE
+    if (cmd.includes("whatsapp") && (cmd.includes("send") || cmd.includes("
