@@ -25,7 +25,7 @@ Designed and developed exclusively by **shahalam laskar**, this assistant bridge
 
 ## ⚖️ Developer & Rights
 * **Creator & Exclusive Rights Holder:** shahalam laskar
-* **Handle:** @shaan
+* **Handle:** @shahalam_laskarr
 * **Location:** Assam, India
 
 *© All Rights Reserved — shahalam laskar.*
