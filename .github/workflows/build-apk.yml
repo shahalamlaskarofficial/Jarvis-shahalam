@@ -21,7 +21,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Assemble Native Jarvis v3.0 Android Project
+      - name: Assemble Native Jarvis v4.0 Android Project
         run: |
           mkdir -p build_apk/src/com/shahalam/jarvis
           mkdir -p build_apk/res/values
@@ -32,7 +32,7 @@ jobs:
 
           cp index.html build_apk/assets/index.html
 
-          # Generate a fixed custom Jarvis Launcher Icon PNG automatically
+          # Generate fixed custom Jarvis Launcher Icon PNG
           python3 - << 'PYEOF'
           import zlib, struct, math
           w, h = 192, 192
@@ -75,8 +75,8 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               package="com.shahalam.jarvis"
-              android:versionCode="3"
-              android:versionName="3.0">
+              android:versionCode="4"
+              android:versionName="4.0">
 
               <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="33" />
 
@@ -86,6 +86,7 @@ jobs:
               <uses-permission android:name="android.permission.CALL_PHONE" />
               <uses-permission android:name="android.permission.CAMERA" />
               <uses-permission android:name="android.permission.FLASHLIGHT" />
+              <uses-permission android:name="android.permission.VIBRATE" />
               <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
               <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
 
@@ -99,6 +100,7 @@ jobs:
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
+                      android:launchMode="singleTop"
                       android:configChanges="orientation|screenSize|keyboardHidden">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -106,6 +108,8 @@ jobs:
                       </intent-filter>
                       <intent-filter>
                           <action android:name="android.intent.action.ASSIST" />
+                          <action android:name="android.intent.action.VOICE_COMMAND" />
+                          <action android:name="android.speech.action.WEB_SEARCH" />
                           <category android:name="android.intent.category.DEFAULT" />
                       </intent-filter>
                   </activity>
@@ -137,6 +141,8 @@ jobs:
           import android.Manifest;
           import android.app.Activity;
           import android.app.admin.DevicePolicyManager;
+          import android.content.ClipData;
+          import android.content.ClipboardManager;
           import android.content.ComponentName;
           import android.content.Context;
           import android.content.Intent;
@@ -146,6 +152,9 @@ jobs:
           import android.media.AudioManager;
           import android.net.Uri;
           import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.os.Vibrator;
           import android.provider.AlarmClock;
           import android.provider.Settings;
           import android.speech.RecognizerIntent;
@@ -194,6 +203,10 @@ jobs:
 
                   webView.setWebViewClient(new WebViewClient() {
                       @Override
+                      public void onPageFinished(WebView view, String url) {
+                          checkIfLaunchedAsAssistant(getIntent());
+                      }
+                      @Override
                       public boolean shouldOverrideUrlLoading(WebView view, String url) {
                           if (url.startsWith("mailto:") || url.startsWith("tel:") || url.startsWith("https://wa.me")) {
                               try {
@@ -215,7 +228,41 @@ jobs:
                   webView.loadUrl("file:///android_asset/index.html");
               }
 
+              @Override
+              protected void onNewIntent(Intent intent) {
+                  super.onNewIntent(intent);
+                  setIntent(intent);
+                  checkIfLaunchedAsAssistant(intent);
+              }
+
+              private void checkIfLaunchedAsAssistant(Intent intent) {
+                  if (intent != null && intent.getAction() != null) {
+                      String action = intent.getAction();
+                      if (Intent.ACTION_ASSIST.equals(action) || Intent.ACTION_VOICE_COMMAND.equals(action)) {
+                          webView.evaluateJavascript("if(window.onAssistGestureTriggered) window.onAssistGestureTriggered();", null);
+                      }
+                  }
+              }
+
               public class NativeBridge {
+                  @JavascriptInterface
+                  public void vibrate(int ms) {
+                      try {
+                          Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                          if (v != null) v.vibrate(ms);
+                      } catch (Exception ignored) {}
+                  }
+
+                  @JavascriptInterface
+                  public void copyToClipboard(String text) {
+                      runOnUiThread(() -> {
+                          try {
+                              ClipboardManager cb = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                              cb.setPrimaryClip(ClipData.newPlainText("Jarvis", text));
+                          } catch (Exception ignored) {}
+                      });
+                  }
+
                   @JavascriptInterface
                   public void startVoice(String lang) {
                       runOnUiThread(() -> {
@@ -267,6 +314,22 @@ jobs:
                           String camId = cm.getCameraIdList()[0];
                           cm.setTorchMode(camId, state);
                       } catch (Exception ignored) {}
+                  }
+
+                  @JavascriptInterface
+                  public void strobeFlash() {
+                      new Thread(() -> {
+                          try {
+                              CameraManager cm = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+                              String camId = cm.getCameraIdList()[0];
+                              for (int i = 0; i < 6; i++) {
+                                  cm.setTorchMode(camId, true);
+                                  Thread.sleep(120);
+                                  cm.setTorchMode(camId, false);
+                                  Thread.sleep(120);
+                              }
+                          } catch (Exception ignored) {}
+                      }).start();
                   }
 
                   @JavascriptInterface
@@ -399,8 +462,8 @@ jobs:
       - name: Publish Jarvis APK to Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.0-jarvis
-          name: "Jarvis v3.0 Android APK (by Shahalam Laskar)"
+          tag_name: v4.0-jarvis
+          name: "Jarvis v4.0 Android APK (by Shahalam Laskar)"
           files: |
             Jarvis.apk
             JARVIS-shahalam-laskar.apk
